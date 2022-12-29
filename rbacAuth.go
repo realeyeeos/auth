@@ -1,9 +1,8 @@
 package midware
 
 import (
-	"context"
-	"github.com/realeyeeos/auth/infra"
 	"github.com/realeyeeos/auth/infra/ylog"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 //权限等级 0-->admin; 1-->高级用户(agent读写+hub读写)； 2-->agent读写；3-->agent只读；4-->hub读写；5-->hub只读
@@ -22,13 +20,14 @@ import (
 var (
 	UserTable map[string]*User
 	userLock  sync.RWMutex
-
-	ACWorker *AcController
+	UserUrl   string
+	ACWorker  *AcController
 )
 
-func init() {
+func RbacInit(userUrl string) {
+	UserUrl = userUrl
 	var err error
-	table := loadUserFromDB()
+	table := getUserFromUrl()
 	if table != nil {
 		userLock.Lock()
 		UserTable = table
@@ -42,9 +41,9 @@ func init() {
 
 	go func() {
 		for {
-			time.Sleep(3 * time.Second)
+			time.Sleep(10 * time.Second)
 
-			table := loadUserFromDB()
+			table := getUserFromUrl()
 			if table != nil {
 				userLock.Lock()
 				UserTable = table
@@ -54,36 +53,27 @@ func init() {
 	}()
 }
 
-func loadUserFromDB() map[string]*User {
-	userCol := infra.MongoClient.Database(infra.MongoDatabase).Collection(infra.UserCollection)
-	cur, err := userCol.Find(context.Background(), bson.M{})
-	if err != nil {
-		ylog.Errorf("loadUserFromDB", err.Error())
-		return nil
-	}
-	defer cur.Close(context.Background())
-
+func getUserFromUrl() map[string]*User {
 	userTable := map[string]*User{}
-	for cur.Next(context.Background()) {
-		var user User
-		err := cur.Decode(&user)
-		if err != nil {
-			ylog.Errorf("loadUserFromDB", err.Error())
-			continue
-		}
-		userTable[user.Username] = &user
+	response, err := http.Get(UserUrl)
+	if err != nil || response.StatusCode != 200 {
+		ylog.Errorf("getUserFromUrl", "invoke url error %s", err.Error())
+		return userTable
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		ylog.Errorf("getUserFromUrl", "io read error %s", err.Error())
+		return userTable
+	}
+
+	err = jsoniter.Unmarshal(body, &userTable)
+	if err != nil {
+		ylog.Errorf("getUserFromUrl", "Unmarshal error %s", err.Error())
 	}
 	return userTable
 }
-func LoadUserFromDB() {
-	table := loadUserFromDB()
-	if table != nil {
-		userLock.Lock()
-		UserTable = table
-		userLock.Unlock()
-	}
-	return
-}
+
 func queryRolesByHeaders(c *gin.Context) (role string) {
 	user, ok := c.Get("user")
 	if !ok {

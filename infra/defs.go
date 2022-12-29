@@ -1,13 +1,10 @@
 package infra
 
-import (
-	"go.mongodb.org/mongo-driver/mongo"
+const (
+	UserCollection = "user"
 )
 
 var (
-	MongoClient   *mongo.Client
-	MongoDatabase string
-
 	AccessKey string
 	SecretKey string
 
