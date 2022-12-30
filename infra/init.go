@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	confPath := flag.String("c", "conf/auth.yml", "ConfigPath")
+	confPath := flag.String("authConfig", "conf/auth.yml", "ConfigPath")
 	flag.Parse()
 	ConfPath = *confPath
 
