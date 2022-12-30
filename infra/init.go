@@ -30,6 +30,7 @@ func initlog() {
 func initDefault() {
 
 	ApiAuth = Conf.GetBool("auth.apiauth.enable")
+	Secret = Conf.GetString("auth.apiauth.secret")
 	RbacUrl = Conf.GetString("auth.rbac.url")
 
 }
