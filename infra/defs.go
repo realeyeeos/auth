@@ -1,14 +1,17 @@
 package infra
 
-const (
-	UserCollection = "user"
+import (
+	"github.com/spf13/viper"
 )
 
 var (
+	Conf *viper.Viper
+
 	AccessKey string
 	SecretKey string
 
 	ApiAuth   bool
+	RbacUrl   string
 	InnerAuth map[string]string
 	Secret    string
 
@@ -17,4 +20,6 @@ var (
 
 	SdAK string
 	SdSK string
+
+	ConfPath string
 )

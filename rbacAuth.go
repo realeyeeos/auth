@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"github.com/realeyeeos/auth/infra"
 	"github.com/realeyeeos/auth/infra/ylog"
 	"io"
 	"io/ioutil"
@@ -20,12 +21,10 @@ import (
 var (
 	UserTable map[string]*User
 	userLock  sync.RWMutex
-	UserUrl   string
 	ACWorker  *AcController
 )
 
-func RbacInit(userUrl string) {
-	UserUrl = userUrl
+func RbacInit() {
 	var err error
 	table := getUserFromUrl()
 	if table != nil {
@@ -55,7 +54,10 @@ func RbacInit(userUrl string) {
 
 func getUserFromUrl() map[string]*User {
 	userTable := map[string]*User{}
-	response, err := http.Get(UserUrl)
+	if infra.RbacUrl == "" {
+		return userTable
+	}
+	response, err := http.Get(infra.RbacUrl)
 	if err != nil || response.StatusCode != 200 {
 		ylog.Errorf("getUserFromUrl", "invoke url error %s", err.Error())
 		return userTable
