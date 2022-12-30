@@ -1,4 +1,4 @@
-package midware
+package auth
 
 type User struct {
 	Username string       `json:"username" bson:"username"`
