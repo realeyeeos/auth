@@ -53,7 +53,7 @@ func RbacInit() {
 }
 
 func getUserFromUrl() map[string]*User {
-	userTable := map[string]*User{}
+	userTable := make(map[string]*User)
 	if infra.RbacUrl == "" {
 		return userTable
 	}
@@ -68,10 +68,13 @@ func getUserFromUrl() map[string]*User {
 		ylog.Errorf("getUserFromUrl", "io read error %s", err.Error())
 		return userTable
 	}
-
-	err = jsoniter.Unmarshal(body, &userTable)
+	userList := make([]User, 0)
+	err = jsoniter.Unmarshal(body, &userList)
 	if err != nil {
 		ylog.Errorf("getUserFromUrl", "Unmarshal error %s", err.Error())
+	}
+	for _, user := range userList {
+		userTable[user.Username] = &user
 	}
 	return userTable
 }
