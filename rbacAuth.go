@@ -24,6 +24,12 @@ var (
 	ACWorker  *AcController
 )
 
+type UserInfo struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data []User `json:"data"`
+}
+
 func RbacInit() {
 	var err error
 	table := getUserFromUrl()
@@ -68,12 +74,12 @@ func getUserFromUrl() map[string]*User {
 		ylog.Errorf("getUserFromUrl", "io read error %s", err.Error())
 		return userTable
 	}
-	userList := make([]User, 0)
-	err = jsoniter.Unmarshal(body, &userList)
+	userInfo := UserInfo{}
+	err = jsoniter.Unmarshal(body, &userInfo)
 	if err != nil {
 		ylog.Errorf("getUserFromUrl", "Unmarshal error %s", err.Error())
 	}
-	for _, user := range userList {
+	for _, user := range userInfo.Data {
 		userTable[user.Username] = &user
 	}
 	return userTable
