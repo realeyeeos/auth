@@ -4,8 +4,8 @@ import (
 	"github.com/realeyeeos/auth/infra"
 	"github.com/realeyeeos/auth/infra/ylog"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -39,7 +39,7 @@ func RbacInit() {
 		userLock.Unlock()
 	}
 
-	ACWorker, err = NewAcController("conf/rbac.json")
+	ACWorker, err = NewAcController("config/rbac.json")
 	if err != nil {
 		ylog.Errorf("NewAcController", "error %s", err.Error())
 	}
@@ -175,7 +175,7 @@ type AcController struct {
 }
 
 func NewAcController(fileName string) (*AcController, error) {
-	bytes, err := ioutil.ReadFile(fileName)
+	bytes, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil, err
 	}
