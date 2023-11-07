@@ -26,8 +26,6 @@ type AuthClaims struct {
 	jwt.RegisteredClaims
 }
 
-var APITokenSecret = []byte(infra.Secret)
-
 func CreateToken(payload jwt.Claims, secret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
 
@@ -87,7 +85,7 @@ func CheckUser(username, password, salt, hash string) (string, error) {
 				ExpiresAt: jwt.NewNumericDate(time.Now().Add(120 * time.Minute)),
 			},
 		},
-		APITokenSecret,
+		[]byte(infra.Secret),
 	)
 	return tokenString, err
 }
@@ -117,7 +115,7 @@ func TokenAuth() gin.HandlerFunc {
 			return
 		}
 
-		payload, err := VerifyToken(token, APITokenSecret)
+		payload, err := VerifyToken(token, []byte(infra.Secret))
 		if err != nil {
 			ylog.Errorf("AuthRequired", err.Error())
 			c.AbortWithStatus(http.StatusUnauthorized)
@@ -143,7 +141,7 @@ func TokenAuth() gin.HandlerFunc {
 						ExpiresAt: jwt.NewNumericDate(time.Now().Add(120 * time.Minute)),
 					},
 				},
-				APITokenSecret,
+				[]byte(infra.Secret),
 			)
 			if err != nil {
 				ylog.Errorf("AuthRequired", err.Error())
