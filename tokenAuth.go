@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var whiteUrlList = []string{"/eos-service/api/v1/user/login",
@@ -23,7 +23,7 @@ var whiteUrlList = []string{"/eos-service/api/v1/user/login",
 
 type AuthClaims struct {
 	Username string `json:"username"`
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 }
 
 var APITokenSecret = []byte(infra.Secret)
@@ -83,8 +83,8 @@ func CheckUser(username, password, salt, hash string) (string, error) {
 	tokenString, err := CreateToken(
 		AuthClaims{
 			Username: username,
-			StandardClaims: jwt.StandardClaims{
-				ExpiresAt: time.Now().Add(120 * time.Minute).Unix(),
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(time.Now().Add(120 * time.Minute)),
 			},
 		},
 		APITokenSecret,
@@ -139,8 +139,8 @@ func TokenAuth() gin.HandlerFunc {
 			tokenString, err := CreateToken(
 				AuthClaims{
 					Username: currentUser.(string),
-					StandardClaims: jwt.StandardClaims{
-						ExpiresAt: time.Now().Add(120 * time.Minute).Unix(),
+					RegisteredClaims: jwt.RegisteredClaims{
+						ExpiresAt: jwt.NewNumericDate(time.Now().Add(120 * time.Minute)),
 					},
 				},
 				APITokenSecret,
