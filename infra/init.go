@@ -1,20 +1,11 @@
 package infra
 
 import (
-	"flag"
 	"fmt"
 	"github.com/realeyeeos/auth/infra/userconfig"
 	"github.com/realeyeeos/auth/infra/ylog"
 	"os"
 )
-
-func init() {
-	confPath := flag.String("authConfig", "config/auth.yml", "ConfigPath")
-	flag.Parse()
-	ConfPath = *confPath
-
-	InitConfig()
-}
 
 func initlog() {
 	logger := ylog.NewYLog(
@@ -35,7 +26,11 @@ func initDefault() {
 
 }
 
-func InitConfig() {
+func InitConfig(configPath string) {
+	if configPath == "" {
+		configPath = "config/auth.yml"
+	}
+	ConfPath = configPath
 	var (
 		err error
 	)
