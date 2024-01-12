@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -90,6 +91,29 @@ func CheckUser(username, password, salt, hash string) (string, error) {
 	return tokenString, err
 }
 
+type SysSecuritySettingData struct {
+	BusinessType        string            `json:"business_type"`
+	MinPasswordLen      int               `json:"min_password_len"`
+	MaxPasswordLen      int               `json:"max_password_len"`
+	PasswordComplexity  map[string]string `json:"password_complexity"`
+	SessionValidityTime int               `json:"session_validity_time"`
+	MaxFailedLogin      int               `json:"max_failed_login"`
+	LockTime            int               `json:"lock_time"`
+}
+
+func getSessionValidityTimeData(url, businessType, token string) (SysSecuritySettingData, error) {
+	var data SysSecuritySettingData
+	packageDataByte, err := infra.SendGetRequest(url+businessType, token)
+	if err != nil {
+		return data, err
+	}
+	err = json.Unmarshal(packageDataByte, &data)
+	if err != nil {
+		return data, err
+	}
+	return data, nil
+}
+
 func TokenAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !infra.ApiAuth {
@@ -134,11 +158,21 @@ func TokenAuth() gin.HandlerFunc {
 		}
 
 		if int64((*payload)["exp"].(float64)) < time.Now().Add(20*time.Minute).Unix() {
+			//调用MC接口获取续期时间
+			var sessionValidityTime int
+			packageDataResp, err := getSessionValidityTimeData(infra.GetSessionValidityTimeUrl, infra.BusinessType, token)
+			if err != nil {
+				ylog.Errorf("getSessionValidityTimeData failed", err.Error())
+				sessionValidityTime = 120
+			}
+			if packageDataResp.SessionValidityTime != 0 {
+				sessionValidityTime = packageDataResp.SessionValidityTime
+			}
 			tokenString, err := CreateToken(
 				AuthClaims{
 					Username: currentUser.(string),
 					RegisteredClaims: jwt.RegisteredClaims{
-						ExpiresAt: jwt.NewNumericDate(time.Now().Add(120 * time.Minute)),
+						ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(sessionValidityTime) * time.Minute)),
 					},
 				},
 				[]byte(infra.Secret),

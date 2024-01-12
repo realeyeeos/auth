@@ -23,6 +23,8 @@ func initDefault() {
 	ApiAuth = Conf.GetBool("auth.apiauth.enable")
 	Secret = Conf.GetString("auth.apiauth.secret")
 	RbacUrl = Conf.GetString("auth.rbac.url")
+	GetSessionValidityTimeUrl = Conf.GetString("auth.session_validity_time.url")
+	BusinessType = Conf.GetString("auth.business_type")
 
 }
 
