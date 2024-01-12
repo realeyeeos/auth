@@ -8,6 +8,7 @@ import (
 	"github.com/realeyeeos/auth/infra/ylog"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -103,14 +104,22 @@ type SysSecuritySettingData struct {
 
 func getSessionValidityTimeData(url, businessType, token string) (SysSecuritySettingData, error) {
 	var data SysSecuritySettingData
-	packageDataByte, err := infra.SendGetRequest(url+businessType, token)
+	ylog.Infof("SendGetRequest url is: "+url+businessType, "")
+	fmt.Println("SendGetRequest url is: " + url + businessType)
+	dataByte, err := infra.SendGetRequest(url+businessType, token)
 	if err != nil {
+		ylog.Errorf("getSessionValidityTimeData SendGetRequest Error: ", err.Error())
 		return data, err
 	}
-	err = json.Unmarshal(packageDataByte, &data)
+	ylog.Infof("SysSecuritySettingData is: "+string(dataByte), "")
+	fmt.Println("SysSecuritySettingData is: " + string(dataByte))
+	err = json.Unmarshal(dataByte, &data)
 	if err != nil {
+		ylog.Errorf("getSessionValidityTimeData json.Unmarshal Error: ", err.Error())
 		return data, err
 	}
+	ylog.Infof("SysSecuritySettingData SessionValidityTime is: "+strconv.Itoa(data.SessionValidityTime), "")
+	fmt.Println("SysSecuritySettingData SessionValidityTime is: " + strconv.Itoa(data.SessionValidityTime))
 	return data, nil
 }
 
@@ -157,13 +166,12 @@ func TokenAuth() gin.HandlerFunc {
 			return
 		}
 
-		if int64((*payload)["exp"].(float64)) < time.Now().Add(20*time.Minute).Unix() {
+		if int64((*payload)["exp"].(float64)) < time.Now().Add(5*time.Minute).Unix() {
 			//调用MC接口获取续期时间
-			var sessionValidityTime int
+			sessionValidityTime := 120
 			packageDataResp, err := getSessionValidityTimeData(infra.GetSessionValidityTimeUrl, infra.BusinessType, token)
 			if err != nil {
 				ylog.Errorf("getSessionValidityTimeData failed", err.Error())
-				sessionValidityTime = 120
 			}
 			if packageDataResp.SessionValidityTime != 0 {
 				sessionValidityTime = packageDataResp.SessionValidityTime
