@@ -92,6 +92,12 @@ func CheckUser(username, password, salt, hash string) (string, error) {
 	return tokenString, err
 }
 
+type SysSecuritySettingResponse struct {
+	Code    int                    `json:"code"`
+	Message string                 `json:"message"`
+	Data    SysSecuritySettingData `json:"data"`
+}
+
 type SysSecuritySettingData struct {
 	BusinessType        string            `json:"business_type"`
 	MinPasswordLen      int               `json:"min_password_len"`
@@ -103,24 +109,25 @@ type SysSecuritySettingData struct {
 }
 
 func getSessionValidityTimeData(url, businessType, token string) (SysSecuritySettingData, error) {
-	var data SysSecuritySettingData
+	var setting SysSecuritySettingResponse
 	ylog.Infof("SendGetRequest url is: "+url+businessType, "")
-	fmt.Println("SendGetRequest url is: " + url + businessType)
 	dataByte, err := infra.SendGetRequest(url+businessType, token)
 	if err != nil {
 		ylog.Errorf("getSessionValidityTimeData SendGetRequest Error: ", err.Error())
-		return data, err
+		return setting.Data, err
 	}
 	ylog.Infof("SysSecuritySettingData is: "+string(dataByte), "")
-	fmt.Println("SysSecuritySettingData is: " + string(dataByte))
-	err = json.Unmarshal(dataByte, &data)
+	err = json.Unmarshal(dataByte, &setting)
 	if err != nil {
 		ylog.Errorf("getSessionValidityTimeData json.Unmarshal Error: ", err.Error())
-		return data, err
+		return setting.Data, err
 	}
-	ylog.Infof("SysSecuritySettingData SessionValidityTime is: "+strconv.Itoa(data.SessionValidityTime), "")
-	fmt.Println("SysSecuritySettingData SessionValidityTime is: " + strconv.Itoa(data.SessionValidityTime))
-	return data, nil
+	if setting.Code != 0 {
+		ylog.Errorf("getSessionValidityTimeData SendGetRequest Error,code is: ", setting.Message)
+		return setting.Data, err
+	}
+	ylog.Infof("SysSecuritySettingData SessionValidityTime is: "+strconv.Itoa(setting.Data.SessionValidityTime), "")
+	return setting.Data, nil
 }
 
 func TokenAuth() gin.HandlerFunc {
